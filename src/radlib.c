@@ -405,7 +405,6 @@ rad_add_server_ex(struct rad_handle *h, const char *host, int port,
 	srvp = &h->servers[h->num_servers];
 
 	memset(&srvp->addr, 0, sizeof srvp->addr);
-	srvp->addr.sin_len = sizeof srvp->addr;
 	srvp->addr.sin_family = AF_INET;
 	if (!inet_aton(host, &srvp->addr.sin_addr)) {
 		struct hostent *hent;
@@ -722,7 +721,6 @@ rad_continue_send_request(struct rad_handle *h, int selected, int *fd,
 			return -1;
 		}
 		memset(&sin, 0, sizeof sin);
-		sin.sin_len = sizeof sin;
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = h->bindto;
 		sin.sin_port = 0;
@@ -969,7 +967,6 @@ rad_init_send_request(struct rad_handle *h, int *fd, struct timeval *tv)
 			return -1;
 		}
 		memset(&sin, 0, sizeof sin);
-		sin.sin_len = sizeof sin;
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = h->bindto;
 		sin.sin_port = htons(0);
