@@ -25,7 +25,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -58,6 +57,10 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 
 #include "radlib_private.h"
+
+#ifndef __printflike
+#define __printflike(m, n) __attribute__((format(printf, m, n)));
+#endif
 
 static void	 clear_password(struct rad_handle *);
 static void	 generr(struct rad_handle *, const char *, ...)
