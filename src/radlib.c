@@ -44,8 +44,8 @@
 
 #define	MAX_FIELDS	7
 
-/* We need the MPPE_KEY_LEN define */
-#include <netgraph/ng_mppc.h>
+/* We need the MPPE_KEY_LEN define - but we don't have netgraph/ng_mppc.h */
+#define MPPE_KEY_LEN	16
 
 #include <errno.h>
 #include <netdb.h>
