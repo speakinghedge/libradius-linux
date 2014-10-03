@@ -56,7 +56,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "radlib_private.h"
+#include "include/radlib_private.h"
 
 #ifndef __printflike
 #define __printflike(m, n) __attribute__((format(printf, m, n)));
