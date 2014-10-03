@@ -34,12 +34,9 @@
 #ifdef WITH_SSL
 #include <openssl/hmac.h>
 #include <openssl/md5.h>
-#define MD5Init MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final MD5_Final
 #else
 #define MD5_DIGEST_LENGTH 16
-#include <md5.h>
+#include "md5/md5.h"
 #endif
 
 #define	MAX_FIELDS	7
@@ -113,10 +110,10 @@ insert_scrambled_password(struct rad_handle *h, int srv)
 		int i;
 
 		/* Calculate the new scrambler */
-		MD5Init(&ctx);
-		MD5Update(&ctx, srvp->secret, strlen(srvp->secret));
-		MD5Update(&ctx, md5, 16);
-		MD5Final(md5, &ctx);
+		MD5_Init(&ctx);
+		MD5_Update(&ctx, srvp->secret, strlen(srvp->secret));
+		MD5_Update(&ctx, md5, 16);
+		MD5_Final(md5, &ctx);
 
 		/*
 		 * Mix in the current chunk of the password, and copy
@@ -139,15 +136,15 @@ insert_request_authenticator(struct rad_handle *h, int resp)
 	srvp = &h->servers[h->srv];
 
 	/* Create the request authenticator */
-	MD5Init(&ctx);
-	MD5Update(&ctx, &h->out[POS_CODE], POS_AUTH - POS_CODE);
+	MD5_Init(&ctx);
+	MD5_Update(&ctx, &h->out[POS_CODE], POS_AUTH - POS_CODE);
 	if (resp)
-	    MD5Update(&ctx, &h->in[POS_AUTH], LEN_AUTH);
+	    MD5_Update(&ctx, &h->in[POS_AUTH], LEN_AUTH);
 	else
-	    MD5Update(&ctx, &h->out[POS_AUTH], LEN_AUTH);
-	MD5Update(&ctx, &h->out[POS_ATTRS], h->out_len - POS_ATTRS);
-	MD5Update(&ctx, srvp->secret, strlen(srvp->secret));
-	MD5Final(&h->out[POS_AUTH], &ctx);
+	    MD5_Update(&ctx, &h->out[POS_AUTH], LEN_AUTH);
+	MD5_Update(&ctx, &h->out[POS_ATTRS], h->out_len - POS_ATTRS);
+	MD5_Update(&ctx, srvp->secret, strlen(srvp->secret));
+	MD5_Final(&h->out[POS_AUTH], &ctx);
 }
 
 static void
@@ -213,12 +210,12 @@ is_valid_response(struct rad_handle *h, int srv,
 		return 0;
 
 	/* Check the response authenticator */
-	MD5Init(&ctx);
-	MD5Update(&ctx, &h->in[POS_CODE], POS_AUTH - POS_CODE);
-	MD5Update(&ctx, &h->out[POS_AUTH], LEN_AUTH);
-	MD5Update(&ctx, &h->in[POS_ATTRS], len - POS_ATTRS);
-	MD5Update(&ctx, srvp->secret, strlen(srvp->secret));
-	MD5Final(md5, &ctx);
+	MD5_Init(&ctx);
+	MD5_Update(&ctx, &h->in[POS_CODE], POS_AUTH - POS_CODE);
+	MD5_Update(&ctx, &h->out[POS_AUTH], LEN_AUTH);
+	MD5_Update(&ctx, &h->in[POS_ATTRS], len - POS_ATTRS);
+	MD5_Update(&ctx, srvp->secret, strlen(srvp->secret));
+	MD5_Final(md5, &ctx);
 	if (memcmp(&h->in[POS_AUTH], md5, sizeof md5) != 0)
 		return 0;
 
@@ -292,14 +289,15 @@ is_valid_request(struct rad_handle *h)
 	if (h->in[POS_CODE] != RAD_ACCESS_REQUEST) {
 		uint32_t zeroes[4] = { 0, 0, 0, 0 };
 		/* Check the request authenticator */
-		MD5Init(&ctx);
-		MD5Update(&ctx, &h->in[POS_CODE], POS_AUTH - POS_CODE);
-		MD5Update(&ctx, zeroes, LEN_AUTH);
-		MD5Update(&ctx, &h->in[POS_ATTRS], len - POS_ATTRS);
-		MD5Update(&ctx, srvp->secret, strlen(srvp->secret));
-		MD5Final(md5, &ctx);
-		if (memcmp(&h->in[POS_AUTH], md5, sizeof md5) != 0)
+		MD5_Init(&ctx);
+		MD5_Update(&ctx, &h->in[POS_CODE], POS_AUTH - POS_CODE);
+		MD5_Update(&ctx, (char*)zeroes, LEN_AUTH);
+		MD5_Update(&ctx, &h->in[POS_ATTRS], len - POS_ATTRS);
+		MD5_Update(&ctx, srvp->secret, strlen(srvp->secret));
+		MD5_Final(md5, &ctx);
+		if (memcmp(&h->in[POS_AUTH], md5, sizeof md5) != 0) {
 			return (0);
+		}
 	}
 
 #ifdef WITH_SSL
@@ -1450,10 +1448,10 @@ rad_demangle(struct rad_handle *h, const void *mangled, size_t mlen)
 	if (!demangled)
 		return NULL;
 
-	MD5Init(&Context);
-	MD5Update(&Context, S, strlen(S));
-	MD5Update(&Context, R, LEN_AUTH);
-	MD5Final(b, &Context);
+	MD5_Init(&Context);
+	MD5_Update(&Context, S, strlen(S));
+	MD5_Update(&Context, R, LEN_AUTH);
+	MD5_Final(b, &Context);
 	Ppos = 0;
 	while (mlen) {
 
@@ -1462,10 +1460,10 @@ rad_demangle(struct rad_handle *h, const void *mangled, size_t mlen)
 			demangled[Ppos++] = C[i] ^ b[i];
 
 		if (mlen) {
-			MD5Init(&Context);
-			MD5Update(&Context, S, strlen(S));
-			MD5Update(&Context, C, 16);
-			MD5Final(b, &Context);
+			MD5_Init(&Context);
+			MD5_Update(&Context, S, strlen(S));
+			MD5_Update(&Context, C, 16);
+			MD5_Final(b, &Context);
 		}
 
 		C += 16;
@@ -1505,11 +1503,11 @@ rad_demangle_mppe_key(struct rad_handle *h, const void *mangled,
 	Slen = strlen(S);
 	P = alloca(Clen);        /* We derive our plaintext */
 
-	MD5Init(&Context);
-	MD5Update(&Context, S, Slen);
-	MD5Update(&Context, R, LEN_AUTH);
-	MD5Update(&Context, A, SALT_LEN);
-	MD5Final(b, &Context);
+	MD5_Init(&Context);
+	MD5_Update(&Context, S, Slen);
+	MD5_Update(&Context, R, LEN_AUTH);
+	MD5_Update(&Context, A, SALT_LEN);
+	MD5_Final(b, &Context);
 	Ppos = 0;
 
 	while (Clen) {
@@ -1519,10 +1517,10 @@ rad_demangle_mppe_key(struct rad_handle *h, const void *mangled,
 		    P[Ppos++] = C[i] ^ b[i];
 
 		if (Clen) {
-			MD5Init(&Context);
-			MD5Update(&Context, S, Slen);
-			MD5Update(&Context, C, 16);
-			MD5Final(b, &Context);
+			MD5_Init(&Context);
+			MD5_Update(&Context, S, Slen);
+			MD5_Update(&Context, C, 16);
+			MD5_Final(b, &Context);
 		}
 
 		C += 16;
