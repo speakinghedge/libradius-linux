@@ -1043,10 +1043,12 @@ struct rad_handle *
 rad_auth_open(void)
 {
 	struct rad_handle *h;
+	struct timeval tv;
 
 	h = (struct rad_handle *)malloc(sizeof(struct rad_handle));
 	if (h != NULL) {
-		srandomdev();
+		gettimeofday(&tv, NULL);
+		srandom(tv.tv_sec ^ tv.tv_usec);
 		h->fd = -1;
 		h->num_servers = 0;
 		h->ident = random();
